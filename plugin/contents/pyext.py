@@ -166,6 +166,7 @@ def analyse_pkg(path: str) -> dict:
         "pkg_ver": "",
         "scene_ver": 0,
         "workshop_refs": 0,
+        "crash_risk": False,
         "has_text": False,
     }
 
@@ -208,6 +209,7 @@ def analyse_pkg(path: str) -> dict:
             except Exception:
                 pass
 
+        result["crash_risk"] = result["scene_ver"] >= 4 or workshop_refs > 0
         if "/scene.json" in files:
             off, ln = files["/scene.json"]
             raw2: bytes = data[header_size + off: header_size + off + ln]

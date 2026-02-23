@@ -36,6 +36,7 @@ QtObject {
         Stable,      // video — no GPU pipeline in plasmashell
         Vulkan,      // scene — Vulkan 1.1 required, runs in-process
         Web,         // web — requires browser engine, not supported
+        CrashRisk,   // scene with scene.json version >= 4 or workshop cross-refs
         Unsupported, // scene with features the renderer does not implement (e.g. text)
         Unknown      // type not recognised
     }
@@ -51,7 +52,7 @@ QtObject {
         tags: [],
         favor: false,
         playlists: [],
-        compatibility: "unknown"   // "stable" | "vulkan" | "web" | "unsupported" | "unknown"
+        compatibility: "unknown"   // "stable" | "vulkan" | "web" | "crash-risk" | "unsupported" | "unknown"
     })
 
     function wpitemFromQtObject(qobj) {
