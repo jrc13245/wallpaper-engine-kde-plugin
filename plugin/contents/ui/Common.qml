@@ -33,10 +33,12 @@ QtObject {
 
     // Compatibility levels for wallpaper thumbnails
     enum CompatLevel {
-        Stable,     // video/web — no GPU pipeline in plasmashell
-        Vulkan,     // scene — Vulkan 1.1 required, runs in-process
-        CrashRisk,  // scene with scene.json version >= 4 or workshop cross-refs
-        Unknown     // type not recognised
+        Stable,      // video — no GPU pipeline in plasmashell
+        Vulkan,      // scene — Vulkan 1.1 required, runs in-process
+        Web,         // web — requires browser engine, not supported
+        CrashRisk,   // scene with scene.json version >= 4 or workshop cross-refs
+        Unsupported, // scene with features the renderer does not implement (e.g. text)
+        Unknown      // type not recognised
     }
 
     readonly property var wpitem_template: ({
@@ -50,7 +52,7 @@ QtObject {
         tags: [],
         favor: false,
         playlists: [],
-        compatibility: "unknown"   // "stable" | "vulkan" | "crash-risk" | "unknown"
+        compatibility: "unknown"   // "stable" | "vulkan" | "web" | "crash-risk" | "unsupported" | "unknown"
     })
 
     function wpitemFromQtObject(qobj) {

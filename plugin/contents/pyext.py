@@ -167,6 +167,7 @@ def analyse_pkg(path: str) -> dict:
         "scene_ver": 0,
         "workshop_refs": 0,
         "crash_risk": False,
+        "has_text": False,
     }
 
     try:
@@ -209,6 +210,17 @@ def analyse_pkg(path: str) -> dict:
                 pass
 
         result["crash_risk"] = result["scene_ver"] >= 4 or workshop_refs > 0
+        if "/scene.json" in files:
+            off, ln = files["/scene.json"]
+            raw2: bytes = data[header_size + off: header_size + off + ln]
+            try:
+                scene2: dict = json.loads(raw2)
+                objs = scene2.get("objects", [])
+                result["has_text"] = any(
+                    "text" in o and o["text"] is not None for o in objs
+                )
+            except Exception:
+                pass
 
     except Exception:
         pass
