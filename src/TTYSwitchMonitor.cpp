@@ -7,7 +7,8 @@ TTYSwitchMonitor::TTYSwitchMonitor(QQuickItem *parent)
     : QQuickItem(parent), m_sleeping(false) {
     QDBusConnection systemBus = QDBusConnection::systemBus();
     if (!systemBus.isConnected()) {
-        qFatal("Cannot connect to the D-Bus system bus");
+        qWarning() << "TTYSwitchMonitor: Cannot connect to the D-Bus system bus."
+                   << "Sleep/wake detection will be disabled.";
         return;
     }
 
@@ -21,7 +22,8 @@ TTYSwitchMonitor::TTYSwitchMonitor(QQuickItem *parent)
     );
 
     if (!connected) {
-        qFatal("Failed to connect to PrepareForSleep signal");
+        qWarning() << "TTYSwitchMonitor: Failed to connect to PrepareForSleep signal."
+                   << "Sleep/wake detection will be disabled.";
     }
 }
 

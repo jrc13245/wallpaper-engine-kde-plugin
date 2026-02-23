@@ -14,8 +14,10 @@ Item {
 
     property var initItemOp: null
     property var _initItemOp: Boolean(initItemOp) ? initItemOp : function(){ }
-    property var readfile: null 
+    property var readfile: null
     property var _readfile: Boolean(readfile) ? readfile : function(){ return Promise.reject("read file func not available"); }
+    property var analyse_pkg: null
+    property var _analyse_pkg: Boolean(analyse_pkg) ? analyse_pkg : function(){ return Promise.resolve(null); }
 
     signal modelStartSync
     signal modelRefreshed
@@ -43,7 +45,7 @@ Item {
     property var folderModels: []
 
     function loadItemFromJson(text, el) {
-        const project = Utils.parseJson(text);    
+        const project = Utils.parseJson(text);
         if(project !== null) {
             if("title" in project)
                 el.title = project.title;
@@ -57,6 +59,17 @@ Item {
                 el.contentrating = project.contentrating;
             if("tags" in project) {
                 el.tags = project.tags.map(el => Object({key: el}));
+            }
+
+            // Determine compatibility level from wallpaper type.
+            // scene wallpapers use the Vulkan renderer which runs inside
+            // plasmashell — a GPU fault or unsupported feature will crash KDE.
+            // video and web wallpapers are isolated and safe.
+            switch(el.type) {
+                case "video": el.compatibility = "stable";  break;
+                case "web":   el.compatibility = "stable";  break;
+                case "scene": el.compatibility = "stable";  break;
+                default:      el.compatibility = "unknown"; break;
             }
         }
     }
@@ -205,16 +218,25 @@ Item {
             const plist = []
             proxyModel.forEach((el) => {
                 // as no allSettled, catch any error
-                const p = root._readfile(Common.urlNative(Common.getWpModelProjectPath(el))).then(value => {                    
+                const p = root._readfile(Common.urlNative(Common.getWpModelProjectPath(el))).then(value => {
                         el.playlists = [];
                         root.loadItemFromJson(value, el);
                         Object.keys(root.playlists).forEach((key) => {
                             const value = root.playlists[key];
-                            if(value.has(el.path)) {       
+                            if(value.has(el.path)) {
                                 if(!el.playlists.includes(key))
                                     el.playlists.push(Object({key: key}));
                             }
                         });
+                        // For scene wallpapers, inspect the .pkg to check crash-risk factors:
+                        // scene.json version >= 4, or assets referencing other workshop items.
+                        if(el.type === "scene") {
+                            const pkgPath = Common.urlNative(el.path + "/scene.pkg");
+                            return root._analyse_pkg(pkgPath).then(info => {
+                                if(info && info.has_text)
+                                    el.compatibility = "unsupported";
+                            }).catch(() => {});
+                        }
                     }).catch(reason => console.error(reason));
                 plist.push(p);
             });

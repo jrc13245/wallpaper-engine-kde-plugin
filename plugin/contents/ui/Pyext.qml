@@ -57,6 +57,9 @@ Item {
     function reset_wallpaper_config(id) {
         return ws_server.jrpc.send("reset_wallpaper_config", [id]);
     }
+    function analyse_pkg(path) {
+        return ws_server.jrpc.send("analyse_pkg", [path]).then(res => res.result);
+    }
 
 
 

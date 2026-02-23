@@ -242,11 +242,61 @@ RowLayout {
                                 source: Common.getWpModelPreviewSource(model);
                                 sourceSize.width: parent.width
                                 sourceSize.height: parent.height
-                                fillMode: Image.PreserveAspectCrop//Image.Stretch
+                                fillMode: Image.PreserveAspectCrop
                                 cache: false
                                 asynchronous: true
                                 smooth: true
                                 visible: Boolean(preview)
+                            }
+
+                            // Compatibility badge — shown for non-stable wallpapers
+                            Rectangle {
+                                id: compatBadge
+                                visible: model.compatibility !== "stable"
+                                anchors.bottom: parent.bottom
+                                anchors.left: parent.left
+                                anchors.margins: 4
+                                radius: 3
+                                width: badgeRow.implicitWidth + 8
+                                height: badgeRow.implicitHeight + 4
+                                color: model.compatibility === "unsupported" ? "#806000"
+                                     :                                         "#555555"
+                                opacity: 0.92
+
+                                ToolTip.visible: badgeMouse.containsMouse
+                                ToolTip.delay: 400
+                                ToolTip.text: model.compatibility === "unsupported"
+                                    ? "NO TEXT: This scene wallpaper uses text objects which are not yet supported by the renderer."
+                                    : "Unknown wallpaper type — compatibility cannot be determined."
+
+                                Row {
+                                    id: badgeRow
+                                    anchors.centerIn: parent
+                                    spacing: 3
+                                    Kirigami.Icon {
+                                        source: model.compatibility === "unsupported"
+                                            ? "dialog-information-symbolic"
+                                            : "dialog-question-symbolic"
+                                        width: 10; height: 10
+                                        color: "white"
+                                        isMask: true
+                                    }
+                                    Text {
+                                        text: model.compatibility === "unsupported" ? "NO TEXT"
+                                            :                                         "?"
+                                        color: "white"
+                                        font.pixelSize: 9
+                                        font.bold: true
+                                        font.capitalization: Font.AllUppercase
+                                    }
+                                }
+                                MouseArea {
+                                    id: badgeMouse
+                                    anchors.fill: parent
+                                    hoverEnabled: true
+                                    // Don't consume click — let the delegate handle it
+                                    acceptedButtons: Qt.NoButton
+                                }
                             }
                         }
                         onClicked: {
@@ -264,7 +314,7 @@ RowLayout {
 
                     function setCurIndex(model) {
                         // model, ListModel
-                        new Promise((reoslve, reject) => {
+                        new Promise((resolve, reject) => {
                             for(let i=0;i < model.count;i++) {
                                 if(model.get(i).workshopid === cfg_WallpaperWorkShopId) {
                                     view.currentIndex = i;
@@ -576,7 +626,7 @@ RowLayout {
                         Object.entries(config_changes).forEach(([wid, cfg]) => {
                             pyext.write_wallpaper_config(wid, cfg).then(res => {
                                 if(wid == workshopid)
-                                    this.cofnig.update(this.config_changes);
+                                    Object.assign(this.config, this.config_changes[wid] || {});
                                 this.config_changes = {};
                             });
                         });

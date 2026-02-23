@@ -117,7 +117,7 @@ Rectangle {
         }
         else if(this.mouseHooker) {
             this.mouseHooker.target = null;
-            this.mouseHooker.destroy;
+            this.mouseHooker.destroy();
             this.mouseHooker = null;
         }
     }
@@ -226,7 +226,7 @@ Rectangle {
         repeat: false
         interval: 300
         onTriggered: {
-            backendLoader.item.pause();
+            if (backendLoader.item) backendLoader.item.pause();
             playTimer.start();
         }
     }
@@ -343,6 +343,7 @@ Rectangle {
     }
    
     function autoPause() {
+        if (!backendLoader.item) return;
         background.ok
             ? backendLoader.item.play()
             : backendLoader.item.pause();

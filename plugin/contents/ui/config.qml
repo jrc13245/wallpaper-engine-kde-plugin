@@ -113,6 +113,7 @@ ColumnLayout {
         }
         enabled: Boolean(cfg_SteamLibraryPath)
         readfile: pyext.readfile
+        analyse_pkg: pyext ? pyext.analyse_pkg : null
     }
 
     Component.onDestruction: {

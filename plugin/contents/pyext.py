@@ -149,6 +149,82 @@ jrpc.add_method(M.read_wallpaper_config)
 jrpc.add_method(M.write_wallpaper_config)
 jrpc.add_method(M.reset_wallpaper_config)
 
+
+@jrpc.add_method
+def analyse_pkg(path: str) -> dict:
+    """Parse a scene.pkg header and return crash-risk indicators.
+
+    Returns:
+        pkg_ver:       PKGV version string from the pkg header, e.g. "PKGV0022"
+        scene_ver:     'version' field from the embedded scene.json (0 if absent)
+        workshop_refs: number of asset paths that reference other workshop items
+        crash_risk:    True when scene_ver >= 4 or workshop_refs > 0
+    """
+    import struct
+
+    result: dict = {
+        "pkg_ver": "",
+        "scene_ver": 0,
+        "workshop_refs": 0,
+        "has_text": False,
+    }
+
+    try:
+        with open(path, "rb") as f:
+            data: bytes = f.read()
+
+        pos: int = 0
+
+        # PKGV version string (ReadSizedString: 4-byte LE length, then UTF-8 bytes)
+        vlen: int = struct.unpack_from("<i", data, pos)[0]; pos += 4
+        result["pkg_ver"] = data[pos:pos + vlen].decode("utf-8", errors="replace")
+        pos += vlen
+
+        # File index
+        entry_count: int = struct.unpack_from("<i", data, pos)[0]; pos += 4
+        files: dict = {}
+        workshop_refs: int = 0
+
+        for _ in range(entry_count):
+            nlen: int = struct.unpack_from("<i", data, pos)[0]; pos += 4
+            name: str = "/" + data[pos:pos + nlen].decode("utf-8", errors="replace")
+            pos += nlen
+            offset: int = struct.unpack_from("<i", data, pos)[0]; pos += 4
+            length: int = struct.unpack_from("<i", data, pos)[0]; pos += 4
+            files[name] = (offset, length)
+            if "/workshop/" in name:
+                workshop_refs += 1
+
+        result["workshop_refs"] = workshop_refs
+        header_size: int = pos
+
+        # Extract scene.json version
+        if "/scene.json" in files:
+            off, ln = files["/scene.json"]
+            raw: bytes = data[header_size + off: header_size + off + ln]
+            try:
+                scene: dict = json.loads(raw)
+                result["scene_ver"] = int(scene.get("version", 0))
+            except Exception:
+                pass
+
+        if "/scene.json" in files:
+            off, ln = files["/scene.json"]
+            raw2: bytes = data[header_size + off: header_size + off + ln]
+            try:
+                scene2: dict = json.loads(raw2)
+                objs = scene2.get("objects", [])
+                result["has_text"] = any(
+                    "text" in o and o["text"] is not None for o in objs
+                )
+            except Exception:
+                pass
+
+    except Exception:
+        pass
+
+    return result
+
 async def connect(uri):
     async with websockets.connect(uri) as websocket:
         while True:

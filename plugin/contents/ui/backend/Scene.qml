@@ -8,13 +8,15 @@ Item{
     property alias source: player.source
     property string assets: "assets"
     property int displayMode: background.displayMode
+    property bool playerReady: false
     property var volumeFade: Common.createVolumeFade(
-        sceneItem, 
+        sceneItem,
         Qt.binding(function() { return background.mute ? 0 : background.volume; }),
-        (volume) => { player.volume = volume / 100.0; }
+        (volume) => { if (playerReady) player.volume = volume / 100.0; }
     )
 
     onDisplayModeChanged: {
+        if (!playerReady) return;
         if(displayMode == Common.DisplayMode.Scale)
             player.fillMode = SceneViewer.STRETCH;
         else if(displayMode == Common.DisplayMode.Aspect)
@@ -31,8 +33,10 @@ Item{
         speed: background.speed
         assets: sceneItem.assets
         Component.onCompleted: {
+            sceneItem.playerReady = true;
             player.setAcceptMouse(true);
             player.setAcceptHover(true);
+            sceneItem.displayModeChanged();
         }
 
         Connections {
@@ -45,18 +49,20 @@ Item{
 
     Component.onCompleted: {
         background.nowBackend = 'scene';
-        sceneItem.displayModeChanged();
     }
     function play() {
+        if (!playerReady) return;
         volumeFade.start();
         player.play();
     }
     function pause() {
+        if (!playerReady) return;
         volumeFade.stop();
         player.pause();
     }
-    
+
     function getMouseTarget() {
+        if (!playerReady) return null;
         return Qt.binding(function() { return player; })
     }
 }
